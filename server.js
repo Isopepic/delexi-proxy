@@ -1,84 +1,78 @@
 // ===== 1) IMPORTS =====
-import express from "express";              // Framework qui simplifie la création d'un serveur web
-import cors from "cors";                    // Middleware qui gère les autorisations entre origines (CORS)
-import "dotenv/config";                     // Charge automatiquement les variables du fichier .env
-import fetch from "node-fetch";             // Permet d'utiliser fetch dans Node.js (comme dans un navigateur)
+import express from "express";              // Framework serveur HTTP (routes, middlewares)
+import cors from "cors";                    // Contrôle qui a le droit d’appeler ton serveur (CORS)
+import "dotenv/config";                     // Charge les variables du fichier .env dans process.env
+import fetch from "node-fetch";             // fetch côté Node (appels HTTP sortants)
 
-
-// ===== 2) CRÉATION DE L'APPLICATION =====
-const app = express();                      // Initialise l'application Express (notre serveur)
-app.use(cors());                            // Active CORS pour autoriser toutes les origines (on filtrera plus tard si besoin)
-
-
-// ===== 3) VARIABLES POUR LE CACHE DU TOKEN =====
-let cachedToken = null;                     // Stockera le token Spotify actuel
-let cachedExpiry = 0;                        // Stockera la date/heure d'expiration du token (en ms)
-
-
-// ===== 4) FONCTION POUR RÉCUPÉRER UN TOKEN D'APPLICATION =====
-async function getAppToken() {
-  const now = Date.now();                   // Heure actuelle en ms
-
-  // Si on a déjà un token valide, on le réutilise
-  if (cachedToken && now < cachedExpiry) {
-    return cachedToken;
+// ===== 2) APP EXPRESS =====
+const app = express();                      // Crée l’application serveur
+// --- CORS : autorise uniquement tes origines (Pages + local) ---
+const allowed = new Set([
+  "https://isopepic.github.io",             // ton GitHub Pages (à adapter si besoin)
+  "http://localhost:5173",                  // front local (si tu utilises Vite/serveur dev)
+  "http://localhost:5174"                   // tests directs depuis le navigateur
+]);
+app.use(cors({
+  origin: (origin, cb) => {                 // origin = domaine qui fait la requête
+    if (!origin || allowed.has(origin)) return cb(null, true); // autorise si absent (cli/curl) ou dans la liste
+    cb(new Error("Origin non autorisée"));  // sinon, bloque
   }
+}));
 
-  // Sinon, on demande un nouveau token à Spotify
-  const tokenUrl = "https://accounts.spotify.com/api/token";
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+// ===== 3) CACHE TOKEN (mémoire process) =====
+let cachedToken = null;                     // token Spotify actuel
+let cachedExpiry = 0;                       // timestamp d’expiration (en ms)
 
-  // Encodage en Base64 de "clientId:clientSecret" (exigé par Spotify)
-  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+// ===== 4) OBTENIR UN TOKEN D’APP SPOTIFY =====
+async function getAppToken() {              // async = on va await des requêtes réseau
+  const now = Date.now();                   // temps actuel
+  if (cachedToken && now < cachedExpiry) {  // si un token valide est déjà en cache
+    return cachedToken;                     // le réutiliser
+  }
+  const tokenUrl = "https://accounts.spotify.com/api/token"; // endpoint token Spotify
+  const clientId = process.env.SPOTIFY_CLIENT_ID;            // ID depuis variables d’env
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;    // Secret depuis variables d’env
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64"); // "id:secret" en Base64 (format Basic)
 
-  // Requête POST vers l'API Spotify pour obtenir un token
-  const res = await fetch(tokenUrl, {
+  const res = await fetch(tokenUrl, {       // POST pour obtenir un access_token
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization": `Basic ${basic}`,  // Authentification avec le couple id:secret
+      "Content-Type": "application/x-www-form-urlencoded",   // format imposé
+      "Authorization": `Basic ${basic}`,                     // Auth Basic base64(id:secret)
     },
-    body: "grant_type=client_credentials", // On demande un token "application" (pas lié à un utilisateur)
+    body: "grant_type=client_credentials", // flow d’app (pas d’utilisateur)
   });
 
-  // Si Spotify renvoie une erreur
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Erreur lors de la récupération du token : ${res.status} ${txt}`);
+  if (!res.ok) {                            // si Spotify renvoie une erreur HTTP
+    const txt = await res.text();           // on lit le texte d’erreur pour debug
+    throw new Error(`Erreur token: ${res.status} ${txt}`); // on jette une erreur
   }
 
-  // Lecture de la réponse JSON
-  const data = await res.json();
-
-  // On met le token et son expiration en cache (-60s de marge pour éviter les expirations pile au mauvais moment)
-  cachedToken = data.access_token;
-  cachedExpiry = Date.now() + (data.expires_in - 60) * 1000;
-
-  return cachedToken; // On renvoie le token valide
+  const data = await res.json();            // parse JSON { access_token, expires_in, ... }
+  cachedToken = data.access_token;          // stocke le token
+  cachedExpiry = Date.now() + (data.expires_in - 60) * 1000; // calcule l’expir (-60s marge)
+  return cachedToken;                       // renvoie le token prêt à l’emploi
 }
 
-
-// ===== 5) ROUTE POUR RÉCUPÉRER LES DÉTAILS D'UNE PLAYLIST =====
-app.get("/api/playlist/:id", async (req, res) => {
+// ===== 5) ROUTE PLAYLIST =====
+app.get("/api/playlist/:id", async (req, res) => {  // :id = paramètre dynamique depuis l’URL
   try {
-    const playlistId = req.params.id;       // On lit l'ID de la playlist dans l'URL
-    const token = await getAppToken();      // On obtient un token valide
+    const playlistId = req.params.id;               // récupère l’ID envoyé par le front
+    const token = await getAppToken();              // garantit un token valide
 
-    // Appel de l'API Spotify pour cette playlist
-    const url = `https://api.spotify.com/v1/playlists/${playlistId}`;
-    const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}`; // endpoint Spotify Playlist
+    const r = await fetch(url, {                    // appelle Spotify
+      headers: { Authorization: `Bearer ${token}` } // auth Bearer avec notre token
     });
 
-    if (!r.ok) {                            // Si Spotify renvoie une erreur (playlist inexistante, privée, etc.)
-      const msg = await r.text();
-      return res.status(r.status).json({ error: msg });
+    if (!r.ok) {                                    // gère les cas 4xx/5xx
+      const msg = await r.text();                   // texte d’erreur
+      return res.status(r.status).json({ error: msg }); // propager le code + msg
     }
 
-    const full = await r.json();            // Lecture de la réponse complète
+    const full = await r.json();                    // JSON complet de Spotify
 
-    // On crée une version simplifiée pour le front
+    // On construit un objet "slim" (plus léger) pour le front
     const slim = {
       id: full.id,
       name: full.name,
@@ -95,11 +89,19 @@ app.get("/api/playlist/:id", async (req, res) => {
       })),
     };
 
-    res.json(slim);                         // On renvoie l'objet simplifié
+    res.json(slim);                                 // renvoie au navigateur
   } catch (e) {
-    res.status(500).json({ error: String(e) }); // Erreur serveur
+    res.status(500).json({ error: String(e) });     // erreur serveur (try/catch)
   }
 });
 
+// ===== 6) ROUTE SANTÉ (ping rapide) =====
+app.get("/health", (req, res) => {          // endpoint simple pour tester que le serveur est up
+  res.json({ ok: true });                    // renvoie { ok: true }
+});
 
-//
+// ===== 7) DÉMARRAGE DU SERVEUR =====
+const PORT = process.env.PORT || 5174;       // Render fournira PORT; en local on garde 5174
+app.listen(PORT, () => {                      // lance l’écoute HTTP
+  console.log(`Delexi proxy up on http://localhost:${PORT}`); // log de confirmation
+});
