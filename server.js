@@ -67,7 +67,7 @@ app.get("/api/playlist/:id", async (req, res) => {  // :id = paramètre dynamiqu
 
     if (!r.ok) {                                    // gère les cas 4xx/5xx
       const msg = await r.text();                   // texte d’erreur
-      return res.status(r.status).json({ error: "Senator, my scouts could not find the playlist. Either the ID is invalid, or the playlist is private..." }); // propager le code + msg
+      return res.status(r.status).json({ error: msg }); // propager le code + msg
     }
 
     const full = await r.json();                    // JSON complet de Spotify
