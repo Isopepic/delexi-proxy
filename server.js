@@ -12,6 +12,11 @@ const allowed = new Set([
   "http://localhost:5173",                  // front local (si tu utilises Vite/serveur dev)
   "http://localhost:5174"                   // tests directs depuis le navigateur
 ]);
+
+const DEFAULT_MARKET = (process.env.DEFAULT_MARKET || "FR").toUpperCase(); // FR par défaut
+const ALLOWED_MARKETS = new Set(["FR","US","CA","BR","GB","DE","ES","IT"]);
+
+
 app.use(cors({
   origin: (origin, cb) => {                 // origin = domaine qui fait la requête
     if (!origin || allowed.has(origin)) return cb(null, true); // autorise si absent (cli/curl) ou dans la liste
@@ -60,7 +65,11 @@ app.get("/api/playlist/:id", async (req, res) => {  // :id = paramètre dynamiqu
     const playlistId = req.params.id;               // récupère l’ID envoyé par le front
     const token = await getAppToken();              // garantit un token valide
 
-    const url = `https://api.spotify.com/v1/playlists/${playlistId}`; // endpoint Spotify Playlist
+    // 1) Market demandé ? sinon market par défaut (FR)
+    let mk = (req.query.market || DEFAULT_MARKET).toUpperCase();
+    if (!ALLOWED_MARKETS.has(mk)) mk = DEFAULT_MARKET; // garde FR si invalide
+
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}?market=${mk}`;
     const r = await fetch(url, {                    // appelle Spotify
       headers: { Authorization: `Bearer ${token}` } // auth Bearer avec notre token
     });
