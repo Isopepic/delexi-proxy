@@ -95,6 +95,7 @@ app.get("/api/playlist/:id", async (req, res) => {  // :id = paramètre dynamiqu
         duration_ms: it.track?.duration_ms,
         preview_url: it.track?.preview_url,
         external_url: it.track?.external_urls?.spotify,
+        id: it.track?.id,
       })),
     };
 
