@@ -10,7 +10,8 @@ const app = express();                      // Crée l’application serveur
 const allowed = new Set([
   "https://isopepic.github.io",             // ton GitHub Pages (à adapter si besoin)
   "http://localhost:5173",                  // front local (si tu utilises Vite/serveur dev)
-  "http://localhost:5174"                   // tests directs depuis le navigateur
+  "http://localhost:5174",  
+  "https://delexi.vercel.app"                 // tests directs depuis le navigateur
 ]);
 
 const DEFAULT_MARKET = (process.env.DEFAULT_MARKET || "FR").toUpperCase(); // FR par défaut
