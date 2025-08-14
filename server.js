@@ -11,7 +11,10 @@ const allowed = new Set([
   "https://isopepic.github.io",             // ton GitHub Pages (à adapter si besoin)
   "http://localhost:5173",                  // front local (si tu utilises Vite/serveur dev)
   "http://localhost:5174",  
-  "https://delexi.vercel.app"                 // tests directs depuis le navigateur
+  "https://delexi.vercel.app",
+  "https://delexi-ismas-projects-4db74a16.vercel.app",
+  "https://delexi-git-main-ismas-projects-4db74a16.vercel.app" ,
+  "https://delexi-cmcthvnf9-ismas-projects-4db74a16.vercel.app"               // tests directs depuis le navigateur
 ]);
 
 const DEFAULT_MARKET = (process.env.DEFAULT_MARKET || "FR").toUpperCase(); // FR par défaut
