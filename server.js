@@ -10,11 +10,7 @@ const app = express();                      // Crée l’application serveur
 const allowed = new Set([
   "https://isopepic.github.io",             // ton GitHub Pages (à adapter si besoin)
   "http://localhost:5173",                  // front local (si tu utilises Vite/serveur dev)
-  "http://localhost:5174",  
-  "https://delexi.vercel.app",
-  "https://delexi-ismas-projects-4db74a16.vercel.app",
-  "https://delexi-git-main-ismas-projects-4db74a16.vercel.app" ,
-  "https://delexi-cmcthvnf9-ismas-projects-4db74a16.vercel.app"               // tests directs depuis le navigateur
+  "http://localhost:5174"                   // tests directs depuis le navigateur
 ]);
 
 const DEFAULT_MARKET = (process.env.DEFAULT_MARKET || "FR").toUpperCase(); // FR par défaut
@@ -22,12 +18,9 @@ const ALLOWED_MARKETS = new Set(["FR","US","CA","BR","GB","DE","ES","IT"]);
 
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowed.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Origin non autorisée'));
-    }
+  origin: (origin, cb) => {                 // origin = domaine qui fait la requête
+    if (!origin || allowed.has(origin)) return cb(null, true); // autorise si absent (cli/curl) ou dans la liste
+    cb(new Error("Origin non autorisée"));  // sinon, bloque
   }
 }));
 
