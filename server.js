@@ -22,9 +22,12 @@ const ALLOWED_MARKETS = new Set(["FR","US","CA","BR","GB","DE","ES","IT"]);
 
 
 app.use(cors({
-  origin: (origin, cb) => {                 // origin = domaine qui fait la requête
-    if (!origin || allowed.has(origin)) return cb(null, true); // autorise si absent (cli/curl) ou dans la liste
-    cb(new Error("Origin non autorisée"));  // sinon, bloque
+  origin: function (origin, callback) {
+    if (!origin || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origin non autorisée'));
+    }
   }
 }));
 
