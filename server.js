@@ -9,7 +9,9 @@ const app = express();                      // Crée l’application serveur
 // --- CORS : autorise uniquement tes origines (Pages + local) ---
 const allowed = new Set([
   "https://delexi-v1.vercel.app/analysis" ,
-  "https://delexi-v1.vercel.app"                 // tests directs depuis le navigateur
+  "https://delexi-v1.vercel.app",
+  "https://delexi-v1-ismas-projects-4db74a16.vercel.app/",
+  "https://delexi-v1-git-main-ismas-projects-4db74a16.vercel.app/"                 // tests directs depuis le navigateur
 ]);
 
 const DEFAULT_MARKET = (process.env.DEFAULT_MARKET || "FR").toUpperCase(); // FR par défaut
