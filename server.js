@@ -8,7 +8,8 @@ import fetch from "node-fetch";             // fetch côté Node (appels HTTP so
 const app = express();                      // Crée l’application serveur
 // --- CORS : autorise uniquement tes origines (Pages + local) ---
 const allowed = new Set([
-  "*"                  // tests directs depuis le navigateur
+  "https://delexi-v1.vercel.app/analysis" ,
+  "https://delexi-v1.vercel.app"                 // tests directs depuis le navigateur
 ]);
 
 const DEFAULT_MARKET = (process.env.DEFAULT_MARKET || "FR").toUpperCase(); // FR par défaut
