@@ -12,7 +12,7 @@ const allowed = new Set([
   "https://delexi-v1.vercel.app",
   "https://delexi-v1-ismas-projects-4db74a16.vercel.app/",
   "https://delexi-v1-git-main-ismas-projects-4db74a16.vercel.app/",
-  "http://localhost:5173/analysis",
+  "http://localhost:5173/analysis/",
   "http://localhost:5173/"                 // tests directs depuis le navigateur
 ]);
 
