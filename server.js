@@ -63,6 +63,9 @@ async function getAppToken() {              // async = on va await des requêtes
 app.get("/api/playlist/:id", async (req, res) => {  // :id = paramètre dynamique depuis l’URL
   try {
     const playlistId = req.params.id;               // récupère l’ID envoyé par le front
+    if (!/^[A-Za-z0-9]{22}$/.test(playlistId)) {
+      return res.status(400).json({ error: "Invalid playlist ID" });
+    }
     const token = await getAppToken();              // garantit un token valide
 
     // 1) Market demandé ? sinon market par défaut (FR)
@@ -75,8 +78,7 @@ app.get("/api/playlist/:id", async (req, res) => {  // :id = paramètre dynamiqu
     });
 
     if (!r.ok) {                                    // gère les cas 4xx/5xx
-      const msg = await r.text();                   // texte d’erreur
-      return res.status(r.status).json({ error: msg }); // propager le code + msg
+      return res.status(r.status).json({ error: "Spotify request failed" });
     }
 
     const full = await r.json();                    // JSON complet de Spotify
@@ -101,7 +103,8 @@ app.get("/api/playlist/:id", async (req, res) => {  // :id = paramètre dynamiqu
 
     res.json(slim);                                 // renvoie au navigateur
   } catch (e) {
-    res.status(500).json({ error: String(e) });     // erreur serveur (try/catch)
+    console.error(e);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
