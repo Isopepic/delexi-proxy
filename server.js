@@ -8,9 +8,11 @@ import fetch from "node-fetch";             // fetch côté Node (appels HTTP so
 const app = express();                      // Crée l’application serveur
 // --- CORS : autorise uniquement tes origines (Pages + local) ---
 const allowed = new Set([
-  "https://isopepic.github.io",             // ton GitHub Pages (à adapter si besoin)
-  "http://localhost:5173",                  // front local (si tu utilises Vite/serveur dev)
-  "http://localhost:5174"                   // tests directs depuis le navigateur
+  "https://delexi-v1.vercel.app/analysis" ,
+  "https://delexi-v1.vercel.app",
+  "https://delexi-v1-ismas-projects-4db74a16.vercel.app/",
+  "https://delexi-v1-git-main-ismas-projects-4db74a16.vercel.app/",
+  "http://localhost:5173"                 // tests directs depuis le navigateur
 ]);
 
 const DEFAULT_MARKET = (process.env.DEFAULT_MARKET || "FR").toUpperCase(); // FR par défaut
